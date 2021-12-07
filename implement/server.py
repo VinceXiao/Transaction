@@ -46,7 +46,8 @@ class Server:
                         lock = None
                     reply = AccountMessage(self.serverId, message.accountId, None, message.clientId, lock, message.transactionId)
                 else:
-                    self.accounts[message.accountId]["locks"].append(message.transactionId)
+                    if message.transactionId not in self.accounts[message.accountId]["locks"]:
+                        self.accounts[message.accountId]["locks"].append(message.transactionId)
                     reply = AccountMessage(self.serverId, message.accountId, self.accounts[message.accountId]["amount"], message.clientId, message.lock)
         self.sendMessageToServer(json.dumps(reply.__dict__))
         print(reply.__dict__)
