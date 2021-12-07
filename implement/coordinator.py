@@ -21,12 +21,13 @@ class Message:
         self.transactionId = transactionId
 
 class AccountMessage:
-    def __init__(self, serverId, accountId, amount, clientId, lock):
+    def __init__(self, serverId, accountId, amount, clientId, lock, transactionId):
         self.serverId = serverId
         self.accountId = accountId
         self.amount = amount
-        self.lock = lock
         self.clientId = clientId
+        self.lock = lock
+        self.transactionId = transactionId
 
 
 class Transaction:
@@ -86,7 +87,7 @@ class Coordinator:
         transaction = self.transactions[clientId]
         while True:
             if transaction.operations:
-                self.checkAccountInfo(transaction.operations[0], clientId)
+                self.checkAccountInfo(transaction.operations[0], clientId, transaction.transactionId)
                 while not transaction.reply:
                     time.sleep(0.01)
                 accountInfo = transaction.reply
@@ -100,14 +101,14 @@ class Coordinator:
                     continue # skip waiting
             time.sleep(0.1)
                 
-    def checkAccountInfo(self, operation, clientId):
+    def checkAccountInfo(self, operation, clientId, transactionId):
         accountName = operation.serverId + "." + operation.accountId
         if accountName in self.transactions[clientId].locks and self.transactions[clientId].locks[accountName] == "WRITE":
             print("enter here")
-            replyMessage = AccountMessage(operation.serverId, operation.accountId, self.transactions[clientId].accounts[accountName], clientId, "WRITE")
+            replyMessage = AccountMessage(operation.serverId, operation.accountId, self.transactions[clientId].accounts[accountName], clientId, "WRITE", transactionId)
             self.transactions[clientId].reply = replyMessage
         else:
-            acquireMessage = AccountMessage(operation.serverId, operation.accountId, operation.amount, clientId, None)
+            acquireMessage = AccountMessage(operation.serverId, operation.accountId, operation.amount, clientId, None, transactionId)
             if operation.action == "BALANCE":
                 acquireMessage.lock = "READ"
             else:

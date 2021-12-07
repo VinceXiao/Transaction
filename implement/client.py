@@ -44,7 +44,7 @@ class Client:
         else:
             userInput = userInput.split(" ")
             userInput[1] = userInput[1].split(".")
-            print(47)
+            print(47, userInput)
             message = Message(clientId=self.clientId, 
                               action=userInput[0],
                               serverId=userInput[1][0],
