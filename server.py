@@ -7,7 +7,7 @@ import pickle
 import struct
 import time
 import math
-import implement.coordinator
+from implement import coordinator, server
 
 
 IN_CHANNELS = {}
@@ -16,10 +16,12 @@ CLIENT_CHANNELS = {}
 IS_CONNECTED_TO_ALL_NODES = False
 IS_LISTENING_TO_ALL_NODES = False
 IS_COORDIANTOR = False
+COORDIANTOR_ID = None
 NODE_ID = None
 NODE_INT_ID = None
 PORT = None
 Coordinator = None
+Server = None
 LOCAL_HOST_NAME = '0.0.0.0'
 MAX_NODE_COUNT = 50
 timestamp = 0
@@ -31,14 +33,15 @@ HEADER_SIZE = 5
 node_lock = threading.Lock()
 
 def start_node():
-    global NODE_ID, NODE_NUMBER_ID, PORT, TotalOrdering, Coordinator
+    global NODE_ID, NODE_NUMBER_ID, PORT, TotalOrdering, Coordinator, Server
     NODE_ID, config_file = check_cl_args()
     NODE_NUMBER_ID = str(hash(NODE_ID) % (10 ** 8))
     nodeInfos = read_config_file(config_file)
     nodeNumber = len(nodeInfos)
     lock = threading.Lock()
+    Server = server.Server(NODE_ID, COORDIANTOR_ID, send_message_to_coordinator)
     if IS_COORDIANTOR:
-        Coordinator = implement.coordinator.Coordinator(NODE_ID, None, server_unicast, client_unicast)
+        Coordinator = coordinator.Coordinator(NODE_ID, None, send_message_to_server, client_unicast)
     # TotalOrdering = total_ordering.TotalOrdering(unicast, multicast_message, NODE_ID, NODE_NUMBER_ID, nodeNumber, lock, record_message_time)
     threading.Thread(target=listen_to_nodes, args=(nodeNumber,)).start()
     threading.Thread(target=connect_to_nodes, args=(nodeInfos,)).start()
@@ -52,7 +55,7 @@ def check_cl_args():
     return sys.argv[1:]
 
 def read_config_file(config_file):
-    global PORT, IS_COORDIANTOR
+    global PORT, IS_COORDIANTOR, COORDIANTOR_ID
     f = open(config_file, "r")
     nodeInfos = []
     configInfo = f.readline()
@@ -64,8 +67,11 @@ def read_config_file(config_file):
             PORT = configInfo[2]
             if isFirstLine:
                 IS_COORDIANTOR = True
+                COORDIANTOR_ID = configInfo[0]
         else:
             nodeInfos.append(configInfo)
+            if isFirstLine:
+                COORDIANTOR_ID = configInfo[0]
         isFirstLine = False
         configInfo = f.readline()
     return nodeInfos
@@ -113,6 +119,18 @@ def multicast_server_message(message, isFirstMulticast = True):
     for node in OUT_CHANNELS:
         server_unicast(toSendPackage, node)
     node_lock.release()
+
+def send_message_to_server(message, serverId):
+    if serverId == NODE_ID:
+        Server.receiveServerMessage(message)
+    else:
+        server_unicast(message, serverId)
+        
+def send_message_to_coordinator(message):
+    if NODE_ID == COORDIANTOR_ID:
+        Coordinator.receiveServerMessage(message)
+    else:
+        server_unicast(message, COORDIANTOR_ID)
 
 def server_unicast(message, nodeId, isUnicast = False):
     global graph_data
@@ -235,6 +253,8 @@ def node_listening_handler(connection, nodeID):
             # TotalOrdering.ReceiveMessage(message)
             if IS_COORDIANTOR:
                 Coordinator.receiveServerMessage(message)
+            else:
+                Server.receiveServerMessage(message)
             print(message)
 
 if __name__ == "__main__":

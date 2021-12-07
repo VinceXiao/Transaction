@@ -4,12 +4,10 @@ import threading
 
 import time
 
-# def messageJsonDecod(messageDict):
-# 	return namedtuple('Message', messageDict.keys())(*messageDict.values())
+
 from types import SimpleNamespace
 
 def messageJsonDecod(messageDict):
-    # return namedtuple('Message', messageDict.keys())(*messageDict.values())
     return SimpleNamespace(**messageDict)
 
 
@@ -23,11 +21,11 @@ class Message:
         self.transactionId = transactionId
 
 class AccountMessage:
-    def __init__(self, serverId, accountId, amount, clientId, action):
+    def __init__(self, serverId, accountId, amount, clientId, lock):
         self.serverId = serverId
         self.accountId = accountId
         self.amount = amount
-        self.action = action
+        self.lock = lock
         self.clientId = clientId
 
 
@@ -36,6 +34,7 @@ class Transaction:
         self.clientId = clientId
         self.transactionId = transactionId
         self.accounts = {}
+        self.locks = {}
         self.operations = deque([])
         self.reply = None
 
@@ -57,29 +56,28 @@ class Coordinator:
 
     def receiveClientMessage(self, rawMessage):
         message = json.loads(rawMessage, object_hook=messageJsonDecod)
-       
-       
-        # clientId = message.clientId
-        # action = message.action
-        # if clientId not in self.transactions:
-        #     if action == "BEGIN":
-        #         self.transactions[clientId] = Transaction(message.transactionId, clientId)
-        #         threading.Thread(target=self.processTransaction, args=(clientId,)).start()
+        print(message.__dict__)
+        clientId = message.clientId
+        action = message.action
+        if clientId not in self.transactions:
+            if action == "BEGIN":
+                self.transactions[clientId] = Transaction(message.transactionId, clientId)
+                threading.Thread(target=self.processTransaction, args=(clientId,)).start()
 
-        #         # start a thread to process transaction
-        #     else:
-        #         # return value to abort
-        #         pass
-        # else:
-        #     # while clientId has a processing transaction
-        #     if self.transactions[clientId].transactionId == message.transactionId:
-        #         self.transactions[clientId].operations.append(Operation(message))
-        #     else:
-        #         # while the transaction id is different from the current transaction id
-        #         pass
+                # start a thread to process transaction
+            else:
+                # return value to abort
+                pass
+        else:
+            # while clientId has a processing transaction
+            if self.transactions[clientId].transactionId == message.transactionId:
+                self.transactions[clientId].operations.append(Operation(message))
+            else:
+                # while the transaction id is different from the current transaction id
+                pass
 
     def receiveServerMessage(self, rawMessage):
-        accountMessage = messageJsonDecod(rawMessage)
+        accountMessage = json.loads(rawMessage, object_hook=messageJsonDecod)
         clientId = accountMessage.clientId
         self.transactions[clientId].reply = accountMessage
         
@@ -88,26 +86,37 @@ class Coordinator:
         transaction = self.transactions[clientId]
         while True:
             if transaction.operations:
-                accountInfo = self.checkAccountInfo(transaction.operations[0], clientId)
+                self.checkAccountInfo(transaction.operations[0], clientId)
                 while not transaction.reply:
                     time.sleep(0.01)
                 accountInfo = transaction.reply
                 transaction.reply = None
-                if accountInfo.getLock:
+                if accountInfo.lock:
                     operation = transaction.operations.popleft()
                     abort = self.executeOperation(transaction, operation, accountInfo)
                     if abort:
                         del self.transactions[clientId]
                         return
-            else:
-                time.sleep(0.1)
+                    continue # skip waiting
+            time.sleep(0.1)
                 
     def checkAccountInfo(self, operation, clientId):
-        acquireMessage = AccountMessage(operation.serverId, operation.accountId, None, operation.action, clientId)
-        self.sendMessageToServer(json.dumps(acquireMessage.__dict__), operation.serverId)
+        accountName = operation.serverId + "." + operation.accountId
+        if accountName in self.transactions[clientId].locks and self.transactions[clientId].locks[accountName] == "WRITE":
+            print("enter here")
+            replyMessage = AccountMessage(operation.serverId, operation.accountId, self.transactions[clientId].accounts[accountName], clientId, "WRITE")
+            self.transactions[clientId].reply = replyMessage
+        else:
+            acquireMessage = AccountMessage(operation.serverId, operation.accountId, operation.amount, clientId, None)
+            if operation.action == "BALANCE":
+                acquireMessage.lock = "READ"
+            else:
+                acquireMessage.lock = "WRITE"
+            self.sendMessageToServer(json.dumps(acquireMessage.__dict__), operation.serverId)
 
     def executeOperation(self, transaction, operation, accountInfo):
         accountName = accountInfo.serverId + "." + accountInfo.accountId
+        transaction.locks[accountName] = accountInfo.lock
         abort = False
         if operation.action == "DEPOSIT":
             transaction.accounts[accountName] = transaction.accounts.get(accountName, accountInfo.amount) + operation.amount
@@ -124,6 +133,7 @@ class Coordinator:
             pass
         elif operation.action == "ABORT":
             abort = True
+        print(transaction.accounts)
         
 
 
