@@ -107,16 +107,27 @@ class Coordinator:
             transaction = self.clientsTransactions[clientId][transactionId]
             # print("BEGIN NEW TRANSACTION", clientId, transactionId)
             self.replyClient(clientId, True, "OK", transactionId)
-
+            sleepTime = 0
             while True:
+                if sleepTime > 50:
+                    self.sendAbortedMessagesToServers(transaction)
+                    self.replyClient(transaction.clientId, False, "TIMEOUT, ABORTED", transaction.transactionId)
+                    self.clientsTransactions[clientId].pop(transactionId)
+                    break
                 if transaction.operations:
-                    if transaction.operations[0].action in ["COMMIT", "ABORT"]:
+                    sleepTime = 0
+                    if len(transaction.operations) > 1 and transaction.operations[1].action == "ABORT":
+                        self.sendAbortedMessagesToServers(transaction)
+                        self.replyClient(transaction.clientId, False, "ABORTED", transaction.transactionId)
+                        self.clientsTransactions[clientId].pop(transactionId)
+                        break
+                    elif transaction.operations[0].action in ["COMMIT", "ABORT"]:
                         transaction.reply = AccountMessage(None, None, None, None, True, transactionId, None, None, None)
                     else:
                         self.checkAccountInfo(transaction.operations[0], clientId, transaction.transactionId)
                     while not transaction.reply:
                         time.sleep(0.01)
-                        # abort after a limited time
+                        # todo: abort after a limited time
                     accountInfo = transaction.reply
                     transaction.reply = None
                     if accountInfo.lock:
@@ -129,6 +140,8 @@ class Coordinator:
                             break
                         continue # skip waiting
                 time.sleep(0.1)
+                sleepTime += 0.1
+
                 
     def checkAccountInfo(self, operation, clientId, transactionId):
         accountName = operation.serverId + "." + operation.accountId
@@ -244,9 +257,6 @@ class Coordinator:
             print(message.__dict__)
             
             self.sendMessageToServer(json.dumps(message.__dict__), serverId)
-        # self.sendMessageToClient()
-        # todo send aborted message to client
-        # self.replyClient(transaction.clientId, False, "ABORTED")
 
 
     def replyClient(self, clientId, status, message, transactionId):
