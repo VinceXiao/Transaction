@@ -122,8 +122,10 @@ def multicast_server_message(message, isFirstMulticast = True):
 
 def send_message_to_server(message, serverId):
     if serverId == NODE_ID:
+        # print("125 send message to server", serverId)
         Server.receiveServerMessage(message)
     else:
+        print("128 send message to server", serverId)
         server_unicast(message, serverId)
         
 def send_message_to_coordinator(message):
@@ -170,6 +172,7 @@ def receive_server_message(client_data):
 def listen_to_nodes(expectedNodeNumber):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 32*1024)
+    print(LOCAL_HOST_NAME, PORT)
     s.bind((LOCAL_HOST_NAME, int(PORT)))
     s.listen(MAX_NODE_COUNT)
     for i in range(expectedNodeNumber):
@@ -250,12 +253,13 @@ def node_listening_handler(connection, nodeID):
             total_data += recv_data
         message = receive_server_message(total_data)
         if message:
+            print(message)
             # TotalOrdering.ReceiveMessage(message)
             if IS_COORDIANTOR:
                 Coordinator.receiveServerMessage(message)
             else:
                 Server.receiveServerMessage(message)
-            print(message)
+            print("259", message)
 
 if __name__ == "__main__":
     start_node()

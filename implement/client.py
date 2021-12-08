@@ -8,14 +8,14 @@ def messageJsonDecod(messageDict):
     return SimpleNamespace(**messageDict)
 
 class Message:
-    def __init__(self, clientId=None, action=None, serverId=None, accountId=None, amount=None, transactionId=None):
+    def __init__(self, clientId=None, action=None, serverId=None, accountId=None, amount=None, transactionId=None, status=None):
         self.clientId = clientId
         self.action = action
         self.serverId = serverId
         self.accountId = accountId
         self.amount = amount
         self.transactionId = transactionId
-
+        self.status = status
 
 class Client:
     def __init__(self, clientId, sendMessage):
