@@ -35,13 +35,17 @@ def start_client():
     # lock = threading.Lock()
     threading.Thread(target=user_input_handler, args=(client,)).start()
     # threading.Thread(target=listen_to_services, args=(nodeNumber,)).start()
+    threading.Thread(target=listening_server, args=(s, client)).start()
 
 
 def user_input_handler(client):
     while True:
-        userInput = input()
-        client.userInput(userInput)
-
+        try:
+            userInput = input()
+            client.userInput(userInput)
+        except EOFError as e:
+            # print("MEET ERROR:", e, ", Client failed")
+            return 
 
 
 
@@ -76,14 +80,15 @@ def listening_server(connection, client):
             total_data += recv_data
         message = receive_server_message(total_data)
         if message:
-            print("from server: ", message)
+            # print("from server: ", message)
             client.receiveMessage(message)
 
 
 
 def receive_server_message(raw_data):
     message = pickle.loads(raw_data) 
-    return message["content"]
+    # print(message)
+    return message
 
 
 def server_unicast(message, connection):
@@ -93,23 +98,6 @@ def server_unicast(message, connection):
         connection.sendall(header + toSendData)
     except Exception:
         pass
-
-
-def connect_to_services(serverInfos):
-    for serverInfo in serverInfos:
-        threading.Thread(target=connect_to_server, args=(serverInfo,)).start()
-
-    while len(OUT_CHANNELS) != len(serverInfos):
-        continue
-    global IS_CONNECTED_TO_ALL_NODES
-    IS_CONNECTED_TO_ALL_NODES = True
-    while not IS_CONNECTED_TO_ALL_NODES or not IS_LISTENING_TO_ALL_NODES:
-        continue
-    print("Connected to all nodes")
-    while True:
-        # call server services to communicate between servers
-        message = input()
-        multicast_message(message)
 
 def connect_to_server(serverInfo):
     s = socket.socket()

@@ -235,7 +235,7 @@ def node_listening_handler(connection, nodeID):
         header_struct = connection.recv(4) 
         if len(header_struct) < 1:
             print(received_time, "-", nodeID, "disconnected")
-            TotalOrdering.nodeFailed(nodeID)
+            # TotalOrdering.nodeFailed(nodeID)
             OUT_CHANNELS.pop(nodeID)
             return
         unpack_res = struct.unpack('i',header_struct)
@@ -246,7 +246,7 @@ def node_listening_handler(connection, nodeID):
             recv_data = connection.recv(size - recv_size)
             if len(recv_data) < 1:
                 print(received_time, "-", nodeID, "disconnected")
-                TotalOrdering.nodeFailed(nodeID)
+                # TotalOrdering.nodeFailed(nodeID)
                 OUT_CHANNELS.pop(nodeID)
                 return 
             recv_size += len(recv_data)
