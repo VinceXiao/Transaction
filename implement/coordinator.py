@@ -74,7 +74,7 @@ class Coordinator:
                 # print("BEGIN NEW TRANSACTION", clientId, message.transactionId)
                 self.clientsTransactions[clientId] = OrderedDict()
                 self.clientsTransactions[clientId][message.transactionId] = Transaction(message.transactionId, clientId)
-                threading.Thread(target=self.processTransaction, args=(clientId)).start()
+                threading.Thread(target=self.processTransaction, args=(clientId,)).start()
                 # self.replyClient(clientId, True, "OK", message.transactionId)
                 # start a thread to process transaction
             else:

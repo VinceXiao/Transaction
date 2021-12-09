@@ -185,14 +185,14 @@ def listen_to_nodes(expectedNodeNumber):
     while not IS_LISTENING_TO_ALL_NODES or not IS_CONNECTED_TO_ALL_NODES:
         continue
     for nodeId in IN_CHANNELS:
-        threading.Thread(target=node_listening_handler, args=(IN_CHANNELS[nodeId], nodeId)).start()
+        threading.Thread(target=node_listening_handler, args=(IN_CHANNELS[nodeId], nodeId,)).start()
     if IS_COORDIANTOR:
         while True:
             connection, address = s.accept()
             client_data = connection.recv(1024)
             message = receive_client_message(client_data)
             CLIENT_CHANNELS[message["node_id"]] = connection
-            threading.Thread(target=client_handler, args=(connection, message["node_id"])).start()
+            threading.Thread(target=client_handler, args=(connection, message["node_id"],)).start()
 
 def receive_client_message(raw_data):
     message = pickle.loads(raw_data) 

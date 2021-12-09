@@ -35,7 +35,7 @@ def start_client():
     # lock = threading.Lock()
     threading.Thread(target=user_input_handler, args=(client,)).start()
     # threading.Thread(target=listen_to_services, args=(nodeNumber,)).start()
-    threading.Thread(target=listening_server, args=(s, client)).start()
+    threading.Thread(target=listening_server, args=(s, client,)).start()
 
 
 def user_input_handler(client):
