@@ -24,7 +24,7 @@ def start_client():
     CLIENT_ID, config_file = check_cl_args()
     serverInfos = read_config_file(config_file)
     coordinator = serverInfos[0]
-    print(coordinator)
+    # print(coordinator)
     s = socket.socket()
     s.connect((coordinator[1], int(coordinator[2])))
     message = {"node_id": CLIENT_ID}
