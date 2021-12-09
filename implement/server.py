@@ -41,7 +41,7 @@ class Server:
         # print("$$$$$$$", self.accounts)
     
     def commitTransaction(self, message):
-        print("commit Transaction", message.__dict__)
+        # print("commit Transaction", message.__dict__)
         transactionId = message.transactionId
         message.accounts = vars(message.accounts)
         for accountName in message.accounts:
@@ -54,10 +54,10 @@ class Server:
                     print(accountName, "locks num is not 0: ", len(self.accounts[accountName]["locks"]))
             else:
                 self.accounts[accountName]["locks"].remove(transactionId)
-        print("**Commited", self.accounts)
+        # print("**Commited", self.accounts)
 
     def abortTransaction(self, message):
-        print("***ABORT")
+        # print("***ABORT")
         transactionId = message.transactionId
         message.accounts = vars(message.accounts)
         for accountName in message.accounts:
@@ -72,7 +72,7 @@ class Server:
                         print(accountName, "locks num is not 0: ", len(self.accounts[accountName]["locks"]))
                 else:
                     self.accounts[accountName]["locks"].remove(transactionId)
-        print("**Aborted", self.accounts)
+        # print("**Aborted", self.accounts)
 
     def checkAccount(self, message):
         # print("&&&&&&&", self.accounts)
@@ -102,6 +102,6 @@ class Server:
                         self.accounts[message.accountId]["locks"].append(message.transactionId)
                     reply = AccountMessage(self.serverId, message.accountId, self.accounts[message.accountId]["amount"], message.clientId, message.lock, message.transactionId)
         self.sendMessageToServer(json.dumps(reply.__dict__))
-        print(reply.__dict__)
-        print(self.accounts)
+        # print(reply.__dict__)
+        # print(self.accounts)
     

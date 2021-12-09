@@ -159,7 +159,7 @@ class Coordinator:
             self.sendMessageToServer(json.dumps(acquireMessage.__dict__), operation.serverId)
 
     def executeOperation(self, transaction, operation, accountInfo):
-        print("executeOperation", operation.__dict__)
+        # print("executeOperation", operation.__dict__)
         # print("executeOperation accountInfo", accountInfo.__dict__)
         if operation.action not in ["COMMIT", "ABORT"]:
             accountName = accountInfo.serverId + "." + accountInfo.accountId
@@ -234,8 +234,8 @@ class Coordinator:
 
 
     def sendAbortedMessagesToServers(self, transaction):
-        print("sendAbortedMessagesToServers")
-        print(transaction.newAccounts)
+        # print("sendAbortedMessagesToServers")
+        # print(transaction.newAccounts)
         toRemoveAccountsInServers = {}
         for accountName in transaction.accounts:
             accountInfo = accountName.split(".")
@@ -253,8 +253,8 @@ class Coordinator:
         for serverId in toRemoveAccountsInServers:
             # print("$$$$$$$$$$$$", toRemoveAccountsInServers[serverId])
             message = AccountMessage(None, None, None, None, None, transaction.transactionId, None, False, dict(toRemoveAccountsInServers[serverId]))
-            print("$$$$$$$$sendAbortedMessagesToServers")
-            print(message.__dict__)
+            # print("$$$$$$$$sendAbortedMessagesToServers")
+            # print(message.__dict__)
             
             self.sendMessageToServer(json.dumps(message.__dict__), serverId)
 
